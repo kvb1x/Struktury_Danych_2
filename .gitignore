@@ -1,0 +1,10 @@
+*.exe
+*.o
+*.out
+*.app
+
+build/
+out/
+.vscode/
+.idea/
+
