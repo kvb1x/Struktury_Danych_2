@@ -69,7 +69,14 @@ int LinkedList::extract_max()
     return return_temp_val;
 };
 
-int LinkedList::find_max() {};
+int LinkedList::find_max()
+{
+    if (head == nullptr) // sprawdzienie czy lista jest pusta
+    {
+        throw std::out_of_range("Kolejka jest pusta!");
+    }
+    return head->element;
+};
 void LinkedList::modify_key(int element, int priority) {};
 int LinkedList::return_size()
 {
