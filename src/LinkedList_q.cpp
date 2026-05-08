@@ -1,5 +1,6 @@
 #include <LinkedList_q.h>
 #include <iostream>
+#include <stdexcept>
 
 LinkedList::LinkedList(int size) : m_size{0} {};
 LinkedList::~LinkedList() { clear(); };
@@ -34,7 +35,7 @@ void LinkedList::insert(int element, int priority)
         current = current->next;
     }
 
-        newNode->next = current->next; // przyczepiamy node z prawej
+    newNode->next = current->next; // przyczepiamy node z prawej
     current->next = newNode;       // przyczepiamy stary node do lewej strony newNode oraz stary tail na nowy node jesli lista nie jest pusta
 
     if (newNode->next == nullptr)
@@ -45,12 +46,35 @@ void LinkedList::insert(int element, int priority)
 
     ++m_size;
 };
-int LinkedList::extract_max() {};
+int LinkedList::extract_max()
+{
+    if (head == nullptr) // sprawdzienie czy lista jest pusta
+    {
+        throw std::out_of_range("Kolejka jest pusta!");
+    }
+
+    // std::cout << "Element o najwiekszym priorytecie w kolejce: [ " << head->priority << " ]\n";
+
+    Node *temp = head; // tymczasowo przechowujemy aktualny head
+    head = head->next;
+
+    int return_temp_val = temp->element; // przechowanie wartosci przed usunieciem temp
+    delete temp;
+    if (head == nullptr) // sprawdzamy czy lista jest pusta i resetujem tail jesli wczesniej lusta zawierala TYLKO JEDEN ELEMENT
+    {
+        tail = nullptr;
+    }
+
+    --m_size;
+    return return_temp_val;
+};
+
 int LinkedList::find_max() {};
 void LinkedList::modify_key(int element, int priority) {};
 int LinkedList::return_size()
 {
-    std::cout << "\nRozmiar tej kolejki to: [ " << m_size << " ]\n";
+    // std::cout << "\nRozmiar tej kolejki to: [ " << m_size << " ]\n";
+    return m_size;
 };
 
 void LinkedList::removeFirst()
