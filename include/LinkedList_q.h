@@ -4,7 +4,7 @@ class LinkedList
 private:
     struct Node
     {
-        int value{};
+        int element{};
         int priority{};
         Node *next{};
     };
@@ -23,18 +23,18 @@ public:
     int getSize();
 
     // void addLast(int element);
-    // void addFirst(int element);
+    void addFirst(int element);
     // void add(int index, int element);
 
     // void removeLast();
-    // void removeFirst();
+    void removeFirst();
     // void remove(int index);
     // int find(int value);
 
-    void insert(int e, int p);
+    void insert(int element, int priority);
     int extract_max();
     int find_max();
-    void modify_key(int e, int p);
+    void modify_key(int element, int priority);
     int return_size();
 
     void clear();

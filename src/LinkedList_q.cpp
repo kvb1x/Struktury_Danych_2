@@ -1,4 +1,4 @@
-#include <LinkedList.hpp>
+#include <LinkedList_q.h>
 #include <iostream>
 
 LinkedList::LinkedList(int size) : m_size{0} {};
@@ -6,29 +6,121 @@ LinkedList::~LinkedList() { clear(); };
 
 int LinkedList::getSize() { return m_size; }
 
-void LinkedList::addLast(int element)
+void LinkedList::insert(int element, int priority)
 {
-
     Node *newNode = new Node;
-    newNode->value = element;
+    newNode->element = element;   // pakujemy wartosc do nowego wezla
+    newNode->priority = priority; // pakujemy wartosc do nowego wezla
     newNode->next = nullptr;
+
+    if (head == nullptr || priority > head->priority) // sprawdzienie czy lista jest pusta
+    {
+
+        newNode->next = head; // ustawiamy head na nowy node jesli lista nie jest pusta
+        head = newNode;       // teraz head jest poczatkiem listy
+        if (tail == nullptr)
+        {
+            tail = newNode;
+        } // tail tez do tego przypisujemy bo to jedyno node w liscie
+        ++m_size;
+        return;
+    }
+
+    Node *current = head; // tworzymy wskaznik na aktualny node
+
+    while (current->next != nullptr && current->next->priority >= priority) // przechodzimy przez wszystkie nody az do "pustego"
+    {
+
+        current = current->next;
+    }
+
+        newNode->next = current->next; // przyczepiamy node z prawej
+    current->next = newNode;       // przyczepiamy stary node do lewej strony newNode oraz stary tail na nowy node jesli lista nie jest pusta
+
+    if (newNode->next == nullptr)
+    {
+
+        tail = newNode; // teraz tail jest koncem listy
+    }
+
+    ++m_size;
+};
+int LinkedList::extract_max() {};
+int LinkedList::find_max() {};
+void LinkedList::modify_key(int element, int priority) {};
+int LinkedList::return_size()
+{
+    std::cout << "\nRozmiar tej kolejki to: [ " << m_size << " ]\n";
+};
+
+void LinkedList::removeFirst()
+{
 
     if (head == nullptr) // sprawdzienie czy lista jest pusta
     {
-        head = newNode; // jesli tak to zmieniamy nowy obiekt na startowy
-        tail = newNode; // tail tez do tego przypisujemy bo to jedyno node w liscie
+        std::cout << "Lista jest pusta!\n";
+        return;
     }
     else
     {
-        tail->next = newNode; // ustawiamy tail na nowy node jesli lista nie jest pusta
-        tail = newNode;       // teraz tail jest koncem listy
+        Node *temp = head; // tymczasowo przechowujemy aktualny head
+        head = head->next;
+
+        delete temp;
+        if (head == nullptr) // sprawdzamy czy lista jest pusta i resetujem tail jesli wczesniej lusta zawierala TYLKO JEDEN ELEMENT
+        {
+            tail = nullptr;
+        }
     }
-    ++m_size;
+
+    --m_size;
 };
+
+void LinkedList::clear()
+{
+
+    if (head == nullptr) // sprawdzienie czy lista jest pusta
+    {
+
+        std::cout << "Lista jest pusta!\n";
+        return;
+    }
+    else
+    {
+
+        while (head != nullptr) // przechodzimy przez wszystkie nody az do "pustego"
+        {
+
+            removeFirst();
+        }
+    }
+};
+
+// void LinkedList::addLast(int element)
+// {
+
+//     Node *newNode = new Node;
+//     newNode->value = element;
+//     newNode->next = nullptr;
+
+//     if (head == nullptr) // sprawdzienie czy lista jest pusta
+//     {
+//         head = newNode; // jesli tak to zmieniamy nowy obiekt na startowy
+//         tail = newNode; // tail tez do tego przypisujemy bo to jedyno node w liscie
+//     }
+//     else
+//     {
+//         tail->next = newNode; // ustawiamy tail na nowy node jesli lista nie jest pusta
+//         tail = newNode;       // teraz tail jest koncem listy
+//     }
+//     ++m_size;
+// };
+
 // void LinkedList::addFirst(int element)
 // {
 //     Node *newNode = new Node;
-//     newNode->value = element; // pakujemy wartosc do nowego wezla
+//     newNode->element = element;   // pakujemy wartosc do nowego wezla
+//     newNode->priority = priority; // pakujemy wartosc do nowego wezla
 //     newNode->next = nullptr;
 
 //     if (head == nullptr) // sprawdzienie czy lista jest pusta
@@ -117,28 +209,6 @@ void LinkedList::addLast(int element)
 //     --m_size;
 // };
 
-// void LinkedList::removeFirst()
-// {
-
-//     if (head == nullptr) // sprawdzienie czy lista jest pusta
-//     {
-//         std::cout << "Lista jest pusta!\n";
-//         return;
-//     }
-//     else
-//     {
-//         Node *temp = head; // tymczasowo przechowujemy aktualny head
-//         head = head->next;
-
-//         delete temp;
-//         if (head == nullptr) // sprawdzamy czy lista jest pusta i resetujem tail jesli wczesniej lusta zawierala TYLKO JEDEN ELEMENT
-//         {
-//             tail = nullptr;
-//         }
-//     }
-
-//     --m_size;
-// };
 // void LinkedList::remove(int index)
 // {
 //     if (index < 0 || index > m_size - 1) // przy usuwaniu musi byc size -1
@@ -205,26 +275,6 @@ void LinkedList::addLast(int element)
 //     std::cerr << "Brak takiej warosci w liscie!\n";
 //     return -1;
 // };
-
-void LinkedList::clear()
-{
-
-    if (head == nullptr) // sprawdzienie czy lista jest pusta
-    {
-
-        std::cout << "Lista jest pusta!\n";
-        return;
-    }
-    else
-    {
-
-        while (head != nullptr) // przechodzimy przez wszystkie nody az do "pustego"
-        {
-
-            removeFirst();
-        }
-    }
-};
 
 // void LinkedList::print()
 // {
