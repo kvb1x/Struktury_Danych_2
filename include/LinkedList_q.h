@@ -22,14 +22,7 @@ public:
 
     int getSize();
 
-    // void addLast(int element);
-    void addFirst(int element);
-    // void add(int index, int element);
-
-    // void removeLast();
     void removeFirst();
-    // void remove(int index);
-    // int find(int value);
 
     void insert(int element, int priority);
     int extract_max();
@@ -38,5 +31,4 @@ public:
     int return_size();
 
     void clear();
-    // void print();
 };
