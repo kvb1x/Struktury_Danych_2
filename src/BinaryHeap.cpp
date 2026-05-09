@@ -32,17 +32,17 @@ void BinaryHeap::heapifyUp(int index)
 };
 void BinaryHeap::heapifyDown(int index)
 {
-    if (index < 0 && index > m_size)
+    if (index < 0 || index > m_size)
     {
         throw std::runtime_error("Nieprawidlowy index");
     }
 
-    int largest = index;
-    int left = 2 * index + 1;
-    int right = 2 * index + 2;
-
     while (true)
     {
+        int largest = index;
+        int left = 2 * index + 1;
+        int right = 2 * index + 2;
+
         if ((left < m_size) && heap[left].priority > heap[largest].priority) // jelsi lewe jest wyzsze to swap
         {
 
@@ -98,6 +98,10 @@ void BinaryHeap::insert(int element, int priority)
 };
 int BinaryHeap::extract_max()
 {
+    if (m_size <= 0)
+    {
+        throw std::runtime_error(" Kolejka jest pusta!");
+    }
     Node max = heap[0];
 
     int temp = max.element;
@@ -109,7 +113,27 @@ int BinaryHeap::extract_max()
     return temp;
 };
 int BinaryHeap::find_max() { return heap[0].element; };
-void BinaryHeap::modify_key(int element, int priority) {
+void BinaryHeap::modify_key(int element, int priority)
+{
 
+    for (int i = 0; i < m_size; ++i)
+    {
+        if (heap[i].element == element)
+        {
+            if (heap[i].priority <= priority)
+            {
+                heap[i].priority = priority;
+                heapifyUp(i);
+                return;
+            }
+            else
+            {
+                heap[i].priority = priority;
+                heapifyDown(i);
+                return;
+            }
+        }
+    }
+    throw std::runtime_error("Brak takiego leementu");
 };
 int BinaryHeap::return_size() { return m_size; };
