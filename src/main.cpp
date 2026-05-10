@@ -2,11 +2,12 @@
 #include <fstream>
 #include <string>
 #include <random>
+#include <chrono>
 #include "utility.h"
 #include "BinaryHeap_q.h"
 #include "LinkedList_q.h"
 
-//  zapis wynikow do pliku CSV
+// zapis wynikow do pliku CSV
 void saveResult(const std::string &filename, int size, double timeBH, double timeLL)
 {
     std::string fullPath = "/home/kuba/DSA/SD/SD_2/results/" + filename;
@@ -25,11 +26,276 @@ void saveResult(const std::string &filename, int size, double timeBH, double tim
 void initResultFile(const std::string &filename)
 {
     std::string fullPath = "/home/kuba/DSA/SD/SD_2/results/" + filename;
-    std::ofstream file(fullPath, std::ios::trunc); // trunc czysci plik
+    std::ofstream file(fullPath, std::ios::trunc);
     if (file.is_open())
     {
         file << "Rozmiar;BinaryHeap;LinkedList\n";
     }
+}
+
+int minInt(int a, int b)
+{
+    return (a < b) ? a : b;
+}
+
+void clearBinaryHeap(BinaryHeap &bh)
+{
+    while (bh.getSize() > 0)
+    {
+        bh.extract_max();
+    }
+}
+
+void normalizeElements(DataPair *data, int size, int probe)
+{
+    int base = probe * 200000 + 1;
+    for (int i = 0; i < size; ++i)
+    {
+        data[i].element = base + i;
+    }
+}
+
+int *buildRandomIndices(int size, int requestedCount, int &actualCount, std::mt19937 &gen)
+{
+    actualCount = minInt(size, requestedCount);
+
+    int *allIndices = new int[size];
+    for (int i = 0; i < size; ++i)
+    {
+        allIndices[i] = i;
+    }
+
+    for (int i = size - 1; i > 0; --i)
+    {
+        std::uniform_int_distribution<int> dist(0, i);
+        int j = dist(gen);
+
+        int temp = allIndices[i];
+        allIndices[i] = allIndices[j];
+        allIndices[j] = temp;
+    }
+
+    int *queries = new int[actualCount];
+    for (int i = 0; i < actualCount; ++i)
+    {
+        queries[i] = allIndices[i];
+    }
+
+    delete[] allIndices;
+    return queries;
+}
+
+void buildInsertBatch(int count, int baseElement, int *elements, int *priorities, std::mt19937 &gen)
+{
+    std::uniform_int_distribution<int> distPriority(-100000000, 100000000);
+
+    for (int i = 0; i < count; ++i)
+    {
+        elements[i] = baseElement + i;
+        priorities[i] = distPriority(gen);
+    }
+}
+
+double measureFindMaxBH(BinaryHeap &bh, int queryCount)
+{
+    volatile int dummy = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int q = 0; q < queryCount; ++q)
+    {
+        dummy ^= bh.find_max();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)queryCount;
+}
+
+double measureFindMaxLL(LinkedList &ll, int queryCount)
+{
+    volatile int dummy = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int q = 0; q < queryCount; ++q)
+    {
+        dummy ^= ll.find_max();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)queryCount;
+}
+
+double measureReturnSizeBH(BinaryHeap &bh, int queryCount)
+{
+    volatile int dummy = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int q = 0; q < queryCount; ++q)
+    {
+        dummy ^= bh.return_size();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)queryCount;
+}
+
+double measureReturnSizeLL(LinkedList &ll, int queryCount)
+{
+    volatile int dummy = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int q = 0; q < queryCount; ++q)
+    {
+        dummy ^= ll.return_size();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)queryCount;
+}
+
+double measureInsertBH(DataPair *commonData, int size, int *elements, int *priorities, int batchCount)
+{
+    BinaryHeap bh(size + batchCount + 10);
+    for (int i = 0; i < size; ++i)
+    {
+        bh.insert(commonData[i].element, commonData[i].priority);
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < batchCount; ++i)
+    {
+        bh.insert(elements[i], priorities[i]);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)batchCount;
+}
+
+double measureInsertLL(DataPair *commonData, int size, int *elements, int *priorities, int batchCount)
+{
+    LinkedList ll;
+    for (int i = 0; i < size; ++i)
+    {
+        ll.insert(commonData[i].element, commonData[i].priority);
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < batchCount; ++i)
+    {
+        ll.insert(elements[i], priorities[i]);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)batchCount;
+}
+
+double measureExtractBH(DataPair *commonData, int size, int batchCount)
+{
+    BinaryHeap bh(size + 10);
+    for (int i = 0; i < size; ++i)
+    {
+        bh.insert(commonData[i].element, commonData[i].priority);
+    }
+
+    volatile int dummy = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < batchCount; ++i)
+    {
+        dummy ^= bh.extract_max();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)batchCount;
+}
+
+double measureExtractLL(DataPair *commonData, int size, int batchCount)
+{
+    LinkedList ll;
+    for (int i = 0; i < size; ++i)
+    {
+        ll.insert(commonData[i].element, commonData[i].priority);
+    }
+
+    volatile int dummy = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < batchCount; ++i)
+    {
+        dummy ^= ll.extract_max();
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)batchCount;
+}
+
+double measureIncreaseBH(DataPair *commonData, int size, int *queryIndices, int queryCount)
+{
+    BinaryHeap bh(size + 10);
+    for (int i = 0; i < size; ++i)
+    {
+        bh.insert(commonData[i].element, commonData[i].priority);
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < queryCount; ++i)
+    {
+        int idx = queryIndices[i];
+        bh.increase_key(commonData[idx].element, commonData[idx].priority + 5000000 + i);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)queryCount;
+}
+
+double measureIncreaseLL(DataPair *commonData, int size, int *queryIndices, int queryCount)
+{
+    LinkedList ll;
+    for (int i = 0; i < size; ++i)
+    {
+        ll.insert(commonData[i].element, commonData[i].priority);
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < queryCount; ++i)
+    {
+        int idx = queryIndices[i];
+        ll.increase_key(commonData[idx].element, commonData[idx].priority + 5000000 + i);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)queryCount;
+}
+
+double measureDecreaseBH(DataPair *commonData, int size, int *queryIndices, int queryCount)
+{
+    BinaryHeap bh(size + 10);
+    for (int i = 0; i < size; ++i)
+    {
+        bh.insert(commonData[i].element, commonData[i].priority);
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < queryCount; ++i)
+    {
+        int idx = queryIndices[i];
+        bh.decrease_key(commonData[idx].element, commonData[idx].priority - 5000000 - i);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)queryCount;
+}
+
+double measureDecreaseLL(DataPair *commonData, int size, int *queryIndices, int queryCount)
+{
+    LinkedList ll;
+    for (int i = 0; i < size; ++i)
+    {
+        ll.insert(commonData[i].element, commonData[i].priority);
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < queryCount; ++i)
+    {
+        int idx = queryIndices[i];
+        ll.decrease_key(commonData[idx].element, commonData[idx].priority - 5000000 - i);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    return std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)queryCount;
 }
 
 int main()
@@ -125,10 +391,13 @@ int main()
                         size_t size;
                         std::cout << "Podaj ilosc elementow do wylosowania: ";
                         std::cin >> size;
+                        clearBinaryHeap(bh);
                         DataPair *data = generate_random_data_array(size);
-                        // czyszczenie obecnego kopca przez tworzenie od nowa
                         for (size_t i = 0; i < size; i++)
+                        {
+                            data[i].element = static_cast<int>(i) + 1;
                             bh.insert(data[i].element, data[i].priority);
+                        }
                         delete[] data;
                         std::cout << "Zbudowano losowo.\n";
                     }
@@ -141,8 +410,11 @@ int main()
                         DataPair *data = load_data_from_file(path, loaded_size);
                         if (data)
                         {
+                            clearBinaryHeap(bh);
                             for (size_t i = 0; i < loaded_size; i++)
+                            {
                                 bh.insert(data[i].element, data[i].priority);
+                            }
                             delete[] data;
                             std::cout << "Wczytano " << loaded_size << " elementow.\n";
                         }
@@ -230,7 +502,10 @@ int main()
                         ll.clear();
                         DataPair *data = generate_random_data_array(size);
                         for (size_t i = 0; i < size; i++)
+                        {
+                            data[i].element = static_cast<int>(i) + 1;
                             ll.insert(data[i].element, data[i].priority);
+                        }
                         delete[] data;
                         std::cout << "Zbudowano losowo.\n";
                     }
@@ -245,7 +520,9 @@ int main()
                         {
                             ll.clear();
                             for (size_t i = 0; i < loaded_size; i++)
+                            {
                                 ll.insert(data[i].element, data[i].priority);
+                            }
                             delete[] data;
                             std::cout << "Wczytano " << loaded_size << " elementow.\n";
                         }
@@ -265,10 +542,9 @@ int main()
 
             int sizes[] = {
                 5000, 10000, 15000, 20000, 25000, 30000, 35000, 40000,
-                45000, 50000, 55000, 60000, 65000, 70000, 75000, 80000,
-                85000, 90000, 95000, 100000};
+                45000, 50000, 55000, 60000, 65000, 70000, 75000, 80000};
 
-            int probes = 50; // Ilosc seedów dla kazdego rozmiaru
+            int probes = 50;
 
             std::cout << "Przygotowywanie plikow wynikowych...\n";
             initResultFile("insert.csv");
@@ -278,7 +554,6 @@ int main()
             initResultFile("decrease_key.csv");
             initResultFile("return_size.csv");
 
-            // Generator do losowania randomowych indeksow wewnatrz testow
             std::random_device rd;
             std::mt19937 gen(rd());
 
@@ -295,31 +570,20 @@ int main()
 
                 for (int p = 0; p < probes; ++p)
                 {
-                    // 1. Generujemy wspolne dane dla obu struktur
                     DataPair *commonData = generate_random_data_array(size);
+                    normalizeElements(commonData, size, p);
 
-                    // przygotowanie zmiennych do testow
-                    int testElem = 999999;
-                    int testPrio = 999999;
+                    int query_count = 1000;
+                    int batch_count = minInt(size, 1000);
 
-                    std::uniform_int_distribution<int> distIndex(0, size - 1);
+                    int incQueryCount = 0;
+                    int decQueryCount = 0;
+                    int *incQueries = buildRandomIndices(size, batch_count, incQueryCount, gen);
+                    int *decQueries = buildRandomIndices(size, batch_count, decQueryCount, gen);
 
-                    // Element do testu INCREASE_KEY (zwiekszamy priorytet)
-                    int modIncIndex = distIndex(gen);
-                    int elemToIncrease = commonData[modIncIndex].element;
-                    int newIncPrio = commonData[modIncIndex].priority + 5000000;
-
-                    // Element do testu DECREASE_KEY (zmniejszamy priorytet)
-                    int modDecIndex = distIndex(gen);
-                    // Upewniamy sie, ze nie wylosujemy tego samego elementu co do increase_key
-                    while (modDecIndex == modIncIndex)
-                    {
-                        modDecIndex = distIndex(gen);
-                    }
-                    int elemToDecrease = commonData[modDecIndex].element;
-                    int newDecPrio = commonData[modDecIndex].priority - 5000000; // Drastyczny spadek
-
-                    // TESTY KOPIEC BINARNY
+                    int *insertElements = new int[batch_count];
+                    int *insertPriorities = new int[batch_count];
+                    buildInsertBatch(batch_count, 100000000 + p * 200000, insertElements, insertPriorities, gen);
 
                     BinaryHeap bh(size + 10);
                     for (int i = 0; i < size; ++i)
@@ -327,34 +591,13 @@ int main()
                         bh.insert(commonData[i].element, commonData[i].priority);
                     }
 
-                    // metodyka zapytan dla wyszukiwania i rozmiaru (czas o(1) - 1000 zapytan)
-                    int query_count = 1000;
+                    sum_BH_find += measureFindMaxBH(bh, query_count);
+                    sum_BH_size += measureReturnSizeBH(bh, query_count);
 
-                    // Test: find_max
-                    auto start = std::chrono::high_resolution_clock::now();
-                    for (int q = 0; q < query_count; ++q)
-                    {
-                        volatile int dummy = bh.find_max();
-                    }
-                    auto end = std::chrono::high_resolution_clock::now();
-                    sum_BH_find += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)query_count;
-
-                    // Test: return_size
-                    start = std::chrono::high_resolution_clock::now();
-                    for (int q = 0; q < query_count; ++q)
-                    {
-                        volatile int dummy = bh.return_size();
-                    }
-                    end = std::chrono::high_resolution_clock::now();
-                    sum_BH_size += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)query_count;
-
-                    // Testy modyfikujące strukture
-                    sum_BH_insert += measure_time(&bh, &BinaryHeap::insert, testElem, testPrio);
-                    sum_BH_extract += measure_time(&bh, &BinaryHeap::extract_max);
-                    sum_BH_inc_key += measure_time(&bh, &BinaryHeap::increase_key, elemToIncrease, newIncPrio);
-                    sum_BH_dec_key += measure_time(&bh, &BinaryHeap::decrease_key, elemToDecrease, newDecPrio);
-
-                    //  TESTY LISTA JEDNOKIERUNKOWA
+                    sum_BH_insert += measureInsertBH(commonData, size, insertElements, insertPriorities, batch_count);
+                    sum_BH_extract += measureExtractBH(commonData, size, batch_count);
+                    sum_BH_inc_key += measureIncreaseBH(commonData, size, incQueries, incQueryCount);
+                    sum_BH_dec_key += measureDecreaseBH(commonData, size, decQueries, decQueryCount);
 
                     LinkedList ll;
                     for (int i = 0; i < size; ++i)
@@ -362,34 +605,21 @@ int main()
                         ll.insert(commonData[i].element, commonData[i].priority);
                     }
 
-                    // Test: find_max
-                    start = std::chrono::high_resolution_clock::now();
-                    for (int q = 0; q < query_count; ++q)
-                    {
-                        volatile int dummy = ll.find_max();
-                    }
-                    end = std::chrono::high_resolution_clock::now();
-                    sum_LL_find += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)query_count;
+                    sum_LL_find += measureFindMaxLL(ll, query_count);
+                    sum_LL_size += measureReturnSizeLL(ll, query_count);
 
-                    // Test: return_size
-                    start = std::chrono::high_resolution_clock::now();
-                    for (int q = 0; q < query_count; ++q)
-                    {
-                        volatile int dummy = ll.return_size();
-                    }
-                    end = std::chrono::high_resolution_clock::now();
-                    sum_LL_size += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / (double)query_count;
+                    sum_LL_insert += measureInsertLL(commonData, size, insertElements, insertPriorities, batch_count);
+                    sum_LL_extract += measureExtractLL(commonData, size, batch_count);
+                    sum_LL_inc_key += measureIncreaseLL(commonData, size, incQueries, incQueryCount);
+                    sum_LL_dec_key += measureDecreaseLL(commonData, size, decQueries, decQueryCount);
 
-                    // Testy modyfikujace strukture
-                    sum_LL_insert += measure_time(&ll, &LinkedList::insert, testElem, testPrio);
-                    sum_LL_extract += measure_time(&ll, &LinkedList::extract_max);
-                    sum_LL_inc_key += measure_time(&ll, &LinkedList::increase_key, elemToIncrease, newIncPrio);
-                    sum_LL_dec_key += measure_time(&ll, &LinkedList::decrease_key, elemToDecrease, newDecPrio);
-
-                    delete[] commonData; // Oczyszczanie pamieci po zakonczonej probie
+                    delete[] insertElements;
+                    delete[] insertPriorities;
+                    delete[] incQueries;
+                    delete[] decQueries;
+                    delete[] commonData;
                 }
 
-                // Zapisywanie wynikow do odpowiednich 6 plikow CSV
                 saveResult("insert.csv", size, sum_BH_insert / probes, sum_LL_insert / probes);
                 saveResult("extract_max.csv", size, sum_BH_extract / probes, sum_LL_extract / probes);
                 saveResult("find_max.csv", size, sum_BH_find / probes, sum_LL_find / probes);
@@ -401,6 +631,7 @@ int main()
             std::cout << "\nBadania ukonczone\n";
             break;
         }
+
         default:
             std::cerr << "Nieznana opcja\n";
             break;
