@@ -1,4 +1,4 @@
-#include <LinkedList_q.h>
+#include "LinkedList_q.h"
 #include <iostream>
 #include <stdexcept>
 
@@ -31,89 +31,85 @@ void LinkedList::insert(int element, int priority)
 
     while (current->next != nullptr && current->next->priority >= priority) // przechodzimy przez wszystkie nody az do "pustego"
     {
-
         current = current->next;
     }
 
     newNode->next = current->next; // przyczepiamy node z prawej
-    current->next = newNode;       // przyczepiamy stary node do lewej strony newNode oraz stary tail na nowy node jesli lista nie jest pusta
+    current->next = newNode;       // przyczepiamy stary node do lewej strony newNode
 
     if (newNode->next == nullptr)
     {
-
-        tail = newNode; // teraz tail jest koncem listy
+        tail = newNode; // update tail
     }
-
     ++m_size;
 };
+
 int LinkedList::extract_max()
 {
-    if (head == nullptr) // sprawdzienie czy lista jest pusta
+    if (head == nullptr) // jesli head jest puste rzucamy wyjatek
     {
-        throw std::out_of_range("Kolejka jest pusta!");
+        throw std::runtime_error(" Kolejka jest pusta!");
     }
 
-    // std::cout << "Element o najwiekszym priorytecie w kolejce: [ " << head->priority << " ]\n";
+    int tempElement = head->element; // tymczasowo przrchowujemy  wartosc node
+    Node *temp = head;               // tymczasowo przechowujemy aktualny head
 
-    Node *temp = head; // tymczasowo przechowujemy aktualny head
-    head = head->next;
-
-    int return_temp_val = temp->element; // przechowanie wartosci przed usunieciem temp
-    delete temp;
-    if (head == nullptr) // sprawdzamy czy kolejka jest pusta i resetujem tail jesli wczesniej lusta zawierala TYLKO JEDEN ELEMENT
+    head = head->next;   // ustawiamy nowy head
+    if (head == nullptr) // sprawdzamy czy lista jest pusta i resetujem tail
     {
         tail = nullptr;
     }
 
+    delete temp; // usuwamy node
     --m_size;
-    return return_temp_val;
+
+    return tempElement;
 };
 
 int LinkedList::find_max()
 {
-    if (head == nullptr) // sprawdzienie czy kolejka jest pusta
+    if (head == nullptr) // sprawdzenie czy head jest pusty  gdy wywolujemy find max
     {
-        throw std::out_of_range("Kolejka jest pusta!");
+        throw std::runtime_error("Kolejka jest pusta!");
     }
-    return head->element;
+
+    return head->element; // zwracamy max priorytet i usuwamy go
 };
-void LinkedList::modify_key(int element, int priority)
+
+void LinkedList::increase_key(int element, int priority)
 {
-    if (head == nullptr) // sprawdzienie czy kolejka jest pusta
+    if (head == nullptr) // sprawdzienie czy lista jest pusta
     {
-        throw std::out_of_range("Kolejka jest pusta!");
+        return;
     }
-    Node *current = head;     // tworzymy wskaznik na aktualny node
-    Node *previous = nullptr; // pomocniczy pointer
-
-    // while (current->next != nullptr && current->next->priority >= priority) // przechodzimy przez wszystkie nody az do "pustego"
-    // {
-
-    //     current = current->next;
-    // }
 
     if (head->element == element)
     {
-        Node *temp_h = head; // tymczasowo przechowujemy aktualny head
+        if (priority < head->priority)
+            throw std::invalid_argument("W operacji increase_key nowy priorytet nie moze byc mniejszy!");
+        Node *temp = head; // tymczasowo przechowujemy aktualny head
         head = head->next;
-        // current->priority = priority;
-        // int priority_param = current->priority;
-        delete temp_h;
+        if (head == nullptr)
+            tail = nullptr; // zabezpieczenie ogona
+        delete temp;
         --m_size;
         insert(element, priority);
         return;
     }
-    previous = current;
-    current = head->next;
+
+    Node *current = head->next; // tworzymy wskaznik na aktualny node
+    Node *previous = head;
 
     while (current != nullptr) // przechodzimy przez wszystkie nody az do "pustego"
     {
-
         if (current->element == element)
         {
-
+            if (priority < current->priority)
+                throw std::invalid_argument("W operacji increase_key nowy priorytet nie moze byc mniejszy!");
             Node *temp = current;           // przechowanie tymczasowe starego node
             previous->next = current->next; // przyczepiamy stary node do lewej strony newNode
+            if (previous->next == nullptr)
+                tail = previous; // zabezpieczenie ogona
             delete temp;
             --m_size;
             insert(element, priority);
@@ -125,15 +121,60 @@ void LinkedList::modify_key(int element, int priority)
 
     throw std::out_of_range("Brak takiego elementu w kolejce!\n");
 };
+
+void LinkedList::decrease_key(int element, int priority)
+{
+    if (head == nullptr) // sprawdzienie czy lista jest pusta
+    {
+        return;
+    }
+
+    if (head->element == element)
+    {
+        if (priority > head->priority)
+            throw std::invalid_argument("W operacji decrease_key nowy priorytet nie moze byc wiekszy!");
+        Node *temp = head; // tymczasowo przechowujemy aktualny head
+        head = head->next;
+        if (head == nullptr)
+            tail = nullptr; // zabezpieczenie ogona
+        delete temp;
+        --m_size;
+        insert(element, priority);
+        return;
+    }
+
+    Node *current = head->next; // tworzymy wskaznik na aktualny node
+    Node *previous = head;
+
+    while (current != nullptr) // przechodzimy przez wszystkie nody az do "pustego"
+    {
+        if (current->element == element)
+        {
+            if (priority > current->priority)
+                throw std::invalid_argument("W operacji decrease_key nowy priorytet nie moze byc wiekszy!");
+            Node *temp = current;           // przechowanie tymczasowe starego node
+            previous->next = current->next; // przyczepiamy stary node do lewej strony newNode
+            if (previous->next == nullptr)
+                tail = previous; // zabezpieczenie ogona
+            delete temp;
+            --m_size;
+            insert(element, priority);
+            return;
+        }
+        previous = current;
+        current = current->next;
+    }
+
+    throw std::out_of_range("Brak takiego elementu w kolejce!\n");
+};
+
 int LinkedList::return_size()
 {
-    // std::cout << "\nRozmiar tej kolejki to: [ " << m_size << " ]\n";
     return m_size;
 };
 
 void LinkedList::removeFirst()
 {
-
     if (head == nullptr) // sprawdzienie czy lista jest pusta
     {
         std::cout << "Lista jest pusta!\n";
@@ -150,26 +191,27 @@ void LinkedList::removeFirst()
             tail = nullptr;
         }
     }
-
     --m_size;
 };
 
 void LinkedList::clear()
 {
-
     if (head == nullptr) // sprawdzienie czy lista jest pusta
     {
-
-        std::cout << "Lista jest pusta!\n";
         return;
     }
-    else
+
+    Node *current = head;
+    Node *next = nullptr;
+
+    while (current != nullptr)
     {
-
-        while (head != nullptr) // przechodzimy przez wszystkie nody az do "pustego"
-        {
-
-            removeFirst();
-        }
+        next = current->next; // przechowujemy adres na head
+        delete current;       // usuwamy pamiec current
+        current = next;       // ustawiamy wskaznik na current na nastepny w liscie
     }
+
+    head = nullptr;
+    tail = nullptr; // resetujemy ogon
+    m_size = 0;
 };

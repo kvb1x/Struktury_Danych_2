@@ -27,7 +27,9 @@ public:
     void insert(int element, int priority);
     int extract_max();
     int find_max();
-    void modify_key(int element, int priority);
+    // void modify_key(int element, int priority);
+    void increase_key(int element, int priority);
+    void decrease_key(int element, int priority);
     int return_size();
 
     void clear();
